@@ -32,6 +32,7 @@ import haven.rx.BuffToggles;
 import haven.rx.Reactor;
 import integrations.mapv4.MappingClient;
 import me.ender.ClientUtils;
+import me.ender.CombatDistanceTool;
 import me.ender.QuestHelper;
 import me.ender.StatMeterWdg;
 import me.ender.minimap.*;
@@ -106,7 +107,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     public ActWindow craftlist, buildlist, actlist;
     public TimerPanel timers;
     public StudyWnd studywnd;
-    
+
+    // Combat distance tool
+    public CombatDistanceTool combatDistanceTool = null;
+    public Thread combatDistanceToolThread;
+
     public static abstract class BeltSlot {
 	public final int idx;
 
@@ -646,6 +651,19 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    alchemywnd = add(new AlchemyWnd(), ClientUtils.getScreenCenter(ui).sub(AlchemyWnd.WND_SZ.div(2)));
 	} else {
 	    alchemywnd.close();
+	}
+    }
+
+    public void toggleCombatDistanceTool() {
+	if(combatDistanceTool == null && combatDistanceToolThread == null) {
+	    combatDistanceTool = add(new CombatDistanceTool(this), ClientUtils.getScreenCenter(ui).sub(AlchemyWnd.WND_SZ.div(2)));
+	    combatDistanceToolThread = new Thread(combatDistanceTool, "CombatDistanceTool");
+	    combatDistanceToolThread.start();
+	} else {
+	    combatDistanceTool.stop();
+	    combatDistanceTool.reqdestroy();
+	    combatDistanceTool = null;
+	    combatDistanceToolThread = null;
 	}
     }
     
