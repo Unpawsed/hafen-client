@@ -3,9 +3,11 @@ package haven;
 import java.util.*;
 import java.awt.image.BufferedImage;
 import haven.MenuGrid.Pagina;
+import haven.UI.Grab;
+import haven.MenuGrid.Interaction;
 import haven.MenuGrid.PagButton;
 
-public class MenuSearch extends WindowX {
+public class MenuSearch extends Window {
     public final MenuGrid menu;
     public final Results rls;
     public final TextEntry sbox;
@@ -13,6 +15,9 @@ public class MenuSearch extends WindowX {
     private List<Result> cur = Collections.emptyList();
     private List<Result> filtered = Collections.emptyList();
     private boolean recons = false;
+    private Coord drag_start = null;
+    private boolean drag_mode = false;
+    private Grab grab = null;
 
     public class Result {
 	public final PagButton btn;
@@ -33,28 +38,68 @@ public class MenuSearch extends WindowX {
 
 	protected Widget makeitem(Result el, int idx, Coord sz) {
 	    return(new ItemWidget<Result>(this, sz, el) {
-		    {
-			add(new IconText(sz) {
-				protected BufferedImage img() {return(item.btn.img());}
-				protected String text() {return(el.btn.name());}
-				protected int margin() {return(0);}
-				protected Text.Foundry foundry() {return(elf);}
-			    }, Coord.z);
+		{
+		    add(new IconText(sz) {
+			protected BufferedImage img() {return(item.btn.img());}
+			protected String text() {return(el.btn.name());}
+			protected int margin() {return(0);}
+			protected Text.Foundry foundry() {return(elf);}
+		    }, Coord.z);
+		}
+
+		@Override public boolean mousedown(MouseDownEvent ev) {
+		    super.mousedown(ev);
+
+		    if(ev.b == 1){
+			drag_start = ui.mc;
+			drag_mode = false;
+			grab = ui.grabmouse(this);
 		    }
 
-		    private double lastcl = 0;
-		    @Override public boolean mousedown(MouseDownEvent ev) {
-			boolean psel = sel == item;
-			super.mousedown(ev);
-			double now = Utils.rtime();
-			if(psel) {
-			    if(now - lastcl < 0.5)
-				menu.use(item.btn, new MenuGrid.Interaction(1, ui.modflags()), false);
-			}
-			lastcl = now;
-			return(true);
+		    return(true);
+		}
+
+		@Override public void mousemove(MouseMoveEvent ev) {
+		    if(!drag_mode && drag_start != null && drag_start.dist(ui.mc) > 40) {
+			drag_mode = true;
 		    }
-		});
+		    super.mousemove(ev);
+		}
+
+		@Override public boolean mouseup(MouseUpEvent ev) {
+		    if((ev.b == 1) && (grab != null)) {
+			if(drag_mode) {
+			    DropTarget.dropthing(ui.root, ui.mc, rls.sel.btn.pag);
+			} else {
+			    menu.use(rls.sel.btn, new Interaction(), false);
+			}
+
+			drag_start = null;
+			drag_mode = false;
+
+			grab.remove();
+			grab = null;
+
+			setfocus(ui.gui.portrait); // ND: do this to defocus the search box after you select something. It's focusing on your portrait, which does nothing.
+		    }
+		    return super.mouseup(ev);
+		}
+
+	    });
+	}
+
+	@Override
+	public Object tooltip(Coord c, Widget prev) {
+	    try {
+		int slot = slotat(c);
+		final Result item = items().get(slot);
+		if (item != null) {
+		    return new TexI(item.btn.rendertt(true));
+		} else {
+		    return super.tooltip(c, prev);
+		}
+	    } catch (Exception ignored){}
+	    return null;
 	}
     }
 
@@ -63,17 +108,17 @@ public class MenuSearch extends WindowX {
 	this.menu = menu;
 	rls = add(new Results(UI.scale(250, 500)), Coord.z);
 	sbox = add(new TextEntry(UI.scale(250), "") {
-		protected void changed() {
-		    refilter();
-		}
+	    protected void changed() {
+		refilter();
+	    }
 
-		public void activate(String text) {
-		    if(rls.sel != null)
-			menu.use(rls.sel.btn, new MenuGrid.Interaction(1, ui.modflags()), false);
-		    if(!ui.modctrl)
-			MenuSearch.this.wdgmsg("close");
-		}
-	    }, 0, rls.sz.y);
+	    public void activate(String text) {
+		if(rls.sel != null)
+		    menu.use(rls.sel.btn, new MenuGrid.Interaction(1, ui.modflags()), false);
+		if(!ui.modctrl)
+		    MenuSearch.this.wdgmsg("close");
+	    }
+	}, 0, rls.sz.y);
 	pack();
 	setroot(null);
     }
@@ -146,8 +191,8 @@ public class MenuSearch extends WindowX {
     }
 
     public void tick(double dt) {
-	if(menu.cur != root)
-	    setroot(menu.cur);
+//	if(menu.cur != root) // ND: commented these 2 lines so the search checks for EVERYTHING, not just the current sub-menu in the menu-grid
+//	    setroot(menu.cur);
 	if(recons)
 	    updlist();
 	super.tick(dt);
@@ -172,6 +217,19 @@ public class MenuSearch extends WindowX {
 	    return(true);
 	} else {
 	    return(super.keydown(ev));
+	}
+    }
+
+    public void draw(GOut g) {
+	super.draw(g);
+	// Drawing the drag icon
+	if(drag_mode && rls.sel != null) {
+	    GSprite ds = rls.sel.btn.spr();
+	    ui.drawafter(new UI.AfterDraw() {
+		public void draw(GOut g) {
+		    ds.draw(g.reclip(ui.mc.sub(ds.sz().div(2)), ds.sz()));
+		}
+	    });
 	}
     }
 }
