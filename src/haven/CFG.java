@@ -62,6 +62,7 @@ public class CFG<T> {
     public static final CFG<Boolean> AUTO_PICK_ONLY_RADAR = new CFG<>("general.auto_pick_radar", true);
     public static final CFG<Integer> AUTO_PICK_RADIUS = new CFG<>("general.auto_pick_radius", 55);
     public static final CFG<Boolean> AUTO_DROP_RESPECT_FILTER = new CFG<>("general.auto_drop.filter", true);
+    public static final CFG<Double> AUTO_DROP_QUALITY_FLOOR = new CFG<>("general.auto_drop.quality", 0.0);
     public static final CFG<Boolean> AUTO_DROP_PARASITES = new CFG<>("general.auto_drop_parasites", false);
     public static final CFG<Boolean> PRESERVE_SYMBEL = new CFG<>("general.preserve_symbel", false);
     

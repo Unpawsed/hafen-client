@@ -623,10 +623,13 @@ public class WItem extends Widget implements DTarget {
     
     private void checkDrop() {
 	if(checkDrop) {
+	    double quality = CFG.AUTO_DROP_QUALITY_FLOOR.get();
+	    boolean qualityCheck = (quality == 0 || quality >= item.quality());
+
 	    String name = ItemAutoDrop.name(this);
 	    if(name != null) {
 		checkDrop = false;
-		if((!item.matches() || !CFG.AUTO_DROP_RESPECT_FILTER.get()) && ItemAutoDrop.needDrop(name)) {
+		if((!item.matches() || !CFG.AUTO_DROP_RESPECT_FILTER.get()) && ItemAutoDrop.needDrop(name) && qualityCheck) {
 		    item.drop();
 		}
 	    }

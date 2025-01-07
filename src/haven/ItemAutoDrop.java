@@ -3,6 +3,7 @@ package haven;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import me.ender.alchemy.AlchemyData;
 import me.ender.ui.CFGBox;
 import rx.functions.Action0;
 
@@ -18,7 +19,7 @@ public class ItemAutoDrop {
     private static final String CFG_NAME = "item_drop.json";
     private static Gson gson;
     private static CFGWnd wnd;
-    
+
     public static void addCallback(Action0 callback) {
 	updateCallbacks.add(callback);
     }
@@ -55,7 +56,7 @@ public class ItemAutoDrop {
 	}
 	return result;
     }
-    
+
     private static void toggle(String name) {
 	boolean value = !cfg.getOrDefault(name, false);
 	if(cfg.put(name, value) == null) {
@@ -86,7 +87,7 @@ public class ItemAutoDrop {
     private static void updateCallbacks() {
 	updateCallbacks.forEach(Action0::call);
     }
-    
+
     
     private static void tryInit() {
 	if(gson != null) {return;}
@@ -106,7 +107,7 @@ public class ItemAutoDrop {
     private static class DropItem {
 	private final String name;
 	private final Tex tex;
-	
+
 	private DropItem(String name) {
 	    //TODO: add I10N support
 	    this.name = name;
@@ -143,6 +144,24 @@ public class ItemAutoDrop {
 	    
 	    Coord p = list.pos("bl").addys(10);
 	    p = add(new CFGBox("Don't drop filtered items", CFG.AUTO_DROP_RESPECT_FILTER).set(CFGWnd::respectFilterChanged), p).pos("bl").addys(10);
+
+	    p = add(new TextEntry(UI.scale(50), CFG.AUTO_DROP_QUALITY_FLOOR.get().toString()) {
+		@Override
+		protected void changed() {
+
+		    double quality;
+		    try {
+			quality = Double.parseDouble(this.buf.line());
+		    } catch (NumberFormatException e) {
+			quality = 0f;
+		    }
+
+		    CFG.AUTO_DROP_QUALITY_FLOOR.set(quality);
+		}
+	    }, p).pos("ur").addx(5);
+
+	    p = add(new Label("Drop items below this quality"), p).pos("bl").x(0).addys(10);
+
 	    p = add(new Label("Drop item on this window to add it to list"), p).pos("bl");
 	    add(new Label("Right-click item to remove it"), p);
 	    
